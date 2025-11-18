@@ -93,7 +93,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 ## 🔗 Links
 
-- [Live Demo](https://profileperfect-ai.vercel.app)
+- [Live Demo](https://profileperfect-ai.azurewebsites.net)
 - [Documentation](https://docs.profileperfect.ai)
 - [Support](mailto:support@profileperfect.ai)
 

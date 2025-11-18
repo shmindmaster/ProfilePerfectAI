@@ -27,7 +27,7 @@ import { useDropzone } from "react-dropzone";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { FaImages, FaSpinner } from "react-icons/fa";
 import * as z from "zod";
-import { upload } from "@vercel/blob/client";
+import { upload } from "@/lib/upload-client";
 import axios from "axios";
 import { getAvailableStylePresets, getAvailableBackgroundPresets } from "@/lib/ai/image-generation";
 

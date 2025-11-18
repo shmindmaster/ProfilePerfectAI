@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleUpload } from '@vercel/blob/client';
-import { put } from '@vercel/blob';
+import { uploadToAzureStorage, generateUniqueFilename } from '@/lib/azure-storage';
 
 export const runtime = 'nodejs';
 
@@ -16,13 +15,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Handle the upload using Vercel Blob
-    const blob = await put(body.filename, body.file, {
-      access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    // Generate unique filename to avoid conflicts
+    const uniqueFilename = generateUniqueFilename(body.filename);
 
-    return NextResponse.json(blob);
+    // Convert base64 file data to buffer
+    const buffer = Buffer.from(body.file.split(',')[1], 'base64');
+
+    // Upload to Azure Storage
+    const result = await uploadToAzureStorage(uniqueFilename, buffer);
+
+    return NextResponse.json({
+      url: result.url,
+      name: result.name,
+      uploadedAt: new Date().toISOString(),
+    });
 
   } catch (error) {
     console.error('Upload error:', error);
@@ -34,5 +40,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  return NextResponse.json({ message: 'Upload endpoint is ready' });
+  return NextResponse.json({ 
+    message: 'Azure Storage upload endpoint is ready',
+    provider: 'Azure Storage',
+    container: process.env.AZURE_STORAGE_CONTAINER || 'profileperfect-ai'
+  });
 }

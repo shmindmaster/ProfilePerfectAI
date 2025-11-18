@@ -29,7 +29,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { FaFemale, FaImages, FaMale, FaRainbow } from "react-icons/fa";
 import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
-import { upload } from "@vercel/blob/client";
+import { upload } from "@/lib/upload-client";
 import axios from "axios";
 import { ImageInspector } from "./ImageInspector";
 import { ImageInspectionResult, aggregateCharacteristics } from "@/lib/imageInspection";
@@ -237,7 +237,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
               defaultValue={modelType}
               className="grid grid-cols-3 gap-4"
               value={modelType}
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 form.setValue("type", value);
               }}
             >
