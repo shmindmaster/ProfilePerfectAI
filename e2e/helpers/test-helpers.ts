@@ -283,12 +283,40 @@ export async function getContrastRatio(
   selector: string
 ): Promise<number> {
   return await page.locator(selector).evaluate((el) => {
+    function parseRGB(colorStr) {
+      // Supports rgb(a) and hex
+      if (colorStr.startsWith('rgb')) {
+        const vals = colorStr.match(/\d+/g);
+        return vals ? [parseInt(vals[0]), parseInt(vals[1]), parseInt(vals[2])] : [0,0,0];
+      } else if (colorStr.startsWith('#')) {
+        let hex = colorStr.replace('#', '');
+        if (hex.length === 3) {
+          hex = hex.split('').map(x => x + x).join('');
+        }
+        const num = parseInt(hex, 16);
+        return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+      }
+      return [0,0,0];
+    }
+    function luminance([r, g, b]) {
+      const a = [r, g, b].map(function (v) {
+        v /= 255;
+        return v <= 0.03928
+          ? v / 12.92
+          : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+    }
+    function contrastRatio(l1, l2) {
+      return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    }
     const style = window.getComputedStyle(el);
     const bgColor = style.backgroundColor;
     const color = style.color;
-    
-    // Simplified contrast calculation
-    // In real scenario, use proper color contrast calculation
-    return 4.5; // Placeholder - would need full contrast calculation
+    const fgRGB = parseRGB(color);
+    const bgRGB = parseRGB(bgColor);
+    const fgLum = luminance(fgRGB);
+    const bgLum = luminance(bgRGB);
+    return contrastRatio(fgLum, bgLum);
   });
 }
