@@ -271,11 +271,11 @@ test.describe('Image Upload Flow', () => {
     if (await submitButton.count() > 0 && await submitButton.isVisible()) {
       await submitButton.click();
       
-      // Wait for validation
-      await page.waitForTimeout(1000);
+      // Wait for validation message(s) to appear
+      const errorMessages = page.locator('[class*="error"], [role="alert"], [aria-live]');
+      await expect(errorMessages.first()).toBeVisible();
       
       // Look for error messages
-      const errorMessages = page.locator('[class*="error"], [role="alert"], [aria-live]');
       const errorCount = await errorMessages.count();
       
       if (errorCount > 0) {
