@@ -85,6 +85,10 @@ export async function generateHeadshots(request: GenerationRequest): Promise<Gen
     const processingTime = Date.now() - startTime;
     
     // Convert response to GeneratedImage format
+    if (!response.data) {
+      throw new Error('No images generated from API');
+    }
+
     const generatedImages: GeneratedImage[] = response.data.map((image, index) => ({
       id: `generated_${Date.now()}_${index}`,
       url: image.url!,
