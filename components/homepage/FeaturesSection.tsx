@@ -3,29 +3,29 @@ import { Badge } from "@/components/ui/badge"
 
 const features = [
   {
-    title: "Multiple Styles",
-    description: "Choose from various professional styles and backgrounds",
+    title: "AI-Powered Generation",
+    description: "Transform 5-10 selfies into 16-32 professional headshots in minutes",
     icon: <Camera className="h-6 w-6" />
   },
   {
-    title: "High Resolution",
-    description: "Get print-ready images in stunning 4K resolution",
-    icon: <Camera className="h-6 w-6" />
-  },
-  {
-    title: "Fast Delivery",
-    description: "Receive your photos in just 20 minutes",
-    icon: <Clock className="h-6 w-6" />
-  },
-  {
-    title: "Commercial License",
-    description: "Use your photos anywhere, including commercial purposes",
+    title: "Identity-Preserving",
+    description: "Advanced AI that keeps you looking like you while enhancing your professional image",
     icon: <Shield className="h-6 w-6" />
   },
   {
-    title: "AI Enhancement",
-    description: "Advanced AI technology for natural-looking results",
+    title: "Professional Backgrounds",
+    description: "Studio, office, and creative background options for any industry",
+    icon: <Camera className="h-6 w-6" />
+  },
+  {
+    title: "Style Presets",
+    description: "Corporate, startup, and creative style options tailored to your career",
     icon: <Star className="h-6 w-6" />
+  },
+  {
+    title: "Before/After Comparison",
+    description: "See your transformation with our intuitive comparison tool",
+    icon: <Clock className="h-6 w-6" />
   },
 ]
 

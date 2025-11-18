@@ -9,10 +9,10 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2 font-bold text-xl">
               <Camera className="h-5 w-5 text-primary" />
-              <span>Headshots AI</span>
+              <span>ProfilePerfect AI</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Professional AI-generated headshots for your online presence.
+              The one-click studio for your professional digital identity.
             </p>
           </div>
           <div className="space-y-4">
@@ -40,7 +40,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link 
-                  href="https://github.com/astriaai/headshots-starter" 
+                  href="https://github.com/shmindmaster/ProfilePerfectAI" 
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   target="_blank"
                 >
@@ -49,7 +49,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link 
-                  href="https://docs.astria.ai/docs/api/pack/pack/" 
+                  href="https://docs.profileperfect.ai" 
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   target="_blank"
                 >
@@ -58,11 +58,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link 
-                  href="https://twitter.com/Astria_AI" 
+                  href="mailto:support@profileperfect.ai" 
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  target="_blank"
                 >
-                  Twitter
+                  Contact
                 </Link>
               </li>
             </ul>
@@ -72,7 +71,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link 
-                  href="mailto:support@astria.ai" 
+                  href="mailto:support@profileperfect.ai" 
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Contact
@@ -92,7 +91,7 @@ export default function Footer() {
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Headshots AI. All rights reserved.
+            © {new Date().getFullYear()} ProfilePerfect AI. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <p className="text-sm text-muted-foreground">
