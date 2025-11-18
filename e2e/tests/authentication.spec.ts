@@ -21,7 +21,11 @@ test.describe('Authentication & User Management', () => {
     await demoButton.click();
 
     // Wait for navigation or modal
-    await page.waitForTimeout(2000); // Wait for toast/redirect
+    // Wait for either redirect to /overview or demo-related text to appear
+    await Promise.race([
+      page.waitForURL(/\/overview/, { timeout: 4000 }),
+      page.getByText(/demo/i, { timeout: 4000 }).waitFor({ state: 'visible' })
+    ]);
 
     // Should navigate to overview or show demo content
     const currentUrl = page.url();
