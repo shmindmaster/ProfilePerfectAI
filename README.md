@@ -1,63 +1,105 @@
-# 👨‍💼 [Headshot AI](https://headshots-starter.vercel.app/) - Professional Headshots with AI (powered by Astria.ai)
+# 🎯 ProfilePerfect AI - The one-click studio for your professional digital identity
 
-Introducing Headshot AI, an open-source project from [Astria](https://www.astria.ai/) that generates Professional AI Headshots in minutes.
+Stop using that cropped vacation photo. ProfilePerfect AI transforms your casual selfies into studio-quality, professional headshots perfect for LinkedIn, company bios, and resumes. Our advanced AI preserves your unique identity while providing subtle retouching, background replacement, and style options to present the best version of you.
 
-This project was built to give developers & makers a great starting point into building AI applications. This is your launch pad - fork the code, modify it, and make it your own to build a popular AI SaaS app.
+## ✨ Key Features
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Ftree%2Fmain&env=ASTRIA_API_KEY,APP_WEBHOOK_SECRET&envDescription=Set%20up%20environment%20variables%20for%20Leap%20AI%20and%20redirect%20URL%20in%20Supabase%20Auth%20dashboard.%20See%20.env.local.example%20for%20full%20config%20with%20Resend%20and%20Stripe.&envLink=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Fblob%2Fmain%2F.env.local.example&project-name=headshots-starter-clone&repository-name=headshots-starter-clone&demo-title=AI%20Headshot%20Generator&demo-description=A%20Professional%20AI%20headshot%20generator%20starter%20kit%20powered%20by%20Next.js%2C%20Leap%20AI%2C%20and%20Vercel&demo-url=https%3A%2F%2Fwww.getheadshots.ai%2F&demo-image=https%3A%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F1CEDfTwO5vPEiNMgN2Y1t6%2F245d1e0c11c4d8e734fbe345b9ecdc7c%2Fdemo.png&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&external-id=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Ftree%2Fmain)
+- **AI-Powered Generation**: Transform 5-10 selfies into 16-32 professional headshots in minutes
+- **Identity-Preserving Retouching**: Subtle enhancements that keep you looking like you
+- **Professional Backgrounds**: Studio, office, and creative background options
+- **Style Presets**: Corporate, startup, and creative style options
+- **Before/After Comparison**: See the transformation with our comparison tool
+- **Smart Cropping**: LinkedIn-ready circular crops and avatar presets
+- **Credit-Based System**: Pay only for what you need with our flexible pricing
 
-[![Headshot AI Demo](/public/new-demo.png)](https://headshots-starter.vercel.app/)
+## 🚀 Quick Start
 
-## Incoming changes
+### Prerequisites
 
-Incoming [PR]((https://github.com/astriaai/headshots-starter/pull/121)) has been merged to allow usage of  Astria's packs API which helps you avoid hardcoding prompts in your code as well as offering different packs of prompts, and switching to the new Flux model fine-tuning easily.
-Read more on advantage of using packs [Astria's documentation](https://docs.astria.ai/docs/api/pack/pack/).
+- Node.js 18+ 
+- A Supabase project
+- OpenAI API key
+- Google AI API key
+- Stripe account (for payments)
 
-When migrating to the new packs api, add to your vercel environment:
-```text
-NEXT_PUBLIC_TUNE_TYPE=packs
-PACK_QUERY_TYPE=both
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/shmindmaster/ProfilePerfectAI.git
+cd ProfilePerfectAI
 ```
 
-![Headshot AI Packs](assets/headshots-packs.png)
-Here is how it looks
+2. Install dependencies
+```bash
+npm install
+```
 
-## Important Environment Variable Change
+3. Set up environment variables
+```bash
+cp .env.example .env.local
+# Fill in your API keys and configuration
+```
 
-**Note:** The environment variable `VERCEL_URL` has been renamed to `DEPLOYMENT_URL` for consistency across the codebase. If you're updating from a previous version, please update your environment variables accordingly. This change makes the application more platform-agnostic and clearer for deployments on any hosting provider, not just Vercel.
+4. Run the development server
+```bash
+npm run dev
+```
 
-## How It Works
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-Live demo **[here](https://getheadshots.ai)**.
+## 🏗️ Tech Stack
 
-The app is powered by:
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, Shadcn/ui components
+- **Backend**: Next.js API routes
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Storage**: Vercel Blob
+- **Payments**: Stripe
+- **AI**: OpenAI gpt-image-1, Google Nano Banana
 
-- 🚀 [Astria](https://www.astria.ai/) for AI model training & inference
-- ▲ [Next.js](https://nextjs.org/) for app and landing page
-- 🔋 [Supabase](https://supabase.com/) for DB & Auth
-- 📩 [Resend](https://resend.com/) (optional) to email user when headshots are ready
-- ⭐️ [Shadcn](https://ui.shadcn.com/) with [Tailwind CSS](https://tailwindcss.com/) for styles
-- ▲ [Vercel](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Ftree%2Fmain&env=ASTRIA_API_KEY,APP_WEBHOOK_SECRET&envDescription=Set%20up%20environment%20variables%20for%20Leap%20AI%20and%20redirect%20URL%20in%20Supabase%20Auth%20dashboard.%20See%20.env.local.example%20for%20full%20config%20with%20Resend%20and%20Stripe.&envLink=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Fblob%2Fmain%2F.env.local.example&project-name=headshots-starter-clone&repository-name=headshots-starter-clone&demo-title=AI%20Headshot%20Generator&demo-description=A%20Professional%20AI%20headshot%20generator%20starter%20kit%20powered%20by%20Next.js%2C%20Leap%20AI%2C%20and%20Vercel&demo-url=https%3A%2F%2Fwww.getheadshots.ai%2F&demo-image=https%3A%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F1CEDfTwO5vPEiNMgN2Y1t6%2F245d1e0c11c4d8e734fbe345b9ecdc7c%2Fdemo.png&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&external-id=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Ftree%2Fmain) for deployments
-- 💳 [Stripe](https://stripe.com/) for billing
+## 📋 Development Phases
 
-[![Headshot AI Explainer](/public/new-explainer.png)](https://www.astria.ai/)
+### Phase 1: Foundation ✅
+- [x] Repository initialization
+- [x] Brand rebranding
+- [x] Basic project structure
 
-## Running Locally
+### Phase 2: Generation Flow (In Progress)
+- [ ] Database schema updates
+- [ ] AI abstraction layer
+- [ ] Generation API endpoints
+- [ ] UI refactoring for generation
 
-To create your own Headshot AI app, follow these steps:
+### Phase 3: Studio & Retouch Flow
+- [ ] Retouch API endpoints  
+- [ ] Studio Editor modal
+- [ ] Background replacement
+- [ ] Cropping tools
 
-**Note**
-Training models is only available on paid plans. You'll need an active [Astria API Key](<[url](https://www.astria.ai/pricing)>) to train models.
+### Phase 4: Polish & Deploy
+- [ ] Error handling improvements
+- [ ] Final testing
+- [ ] Production deployment
 
-### 1. Vercel template
+## 🤝 Contributing
 
-To setup Supabase/Vercel and your github repo, click on the Vercel Deploy Button and follow the steps.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-IMPORTANT: In the Supabase integration step: Make sure you leave the Create sample tables option checked. This might take a few minutes to complete.
+## 📄 License
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Ftree%2Fmain&env=ASTRIA_API_KEY,APP_WEBHOOK_SECRET&envDescription=Set%20up%20environment%20variables%20for%20Leap%20AI%20and%20redirect%20URL%20in%20Supabase%20Auth%20dashboard.%20See%20.env.local.example%20for%20full%20config%20with%20Resend%20and%20Stripe.&envLink=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Fblob%2Fmain%2F.env.local.example&project-name=headshots-starter-clone&repository-name=headshots-starter-clone&demo-title=AI%20Headshot%20Generator&demo-description=A%20Professional%20AI%20headshot%20generator%20starter%20kit%20powered%20by%20Next.js%2C%20Leap%20AI%2C%20and%20Vercel&demo-url=https%3A%2F%2Fwww.getheadshots.ai%2F&demo-image=https%3A%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F1CEDfTwO5vPEiNMgN2Y1t6%2F245d1e0c11c4d8e734fbe345b9ecdc7c%2Fdemo.png&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&external-id=https%3A%2F%2Fgithub.com%2Fleap-ai%2Fheadshots-starter%2Ftree%2Fmain)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
 
-The Vercel Deployment will create a new repository with this template on your GitHub account and guide you through a new Supabase project creation. The Supabase Vercel Deploy Integration will set up the necessary Supabase environment variables and run the SQL migrations to set up the Database schema on your account. You can inspect the created tables in your project's Table editor.
+## 🔗 Links
+
+- [Live Demo](https://profileperfect-ai.vercel.app)
+- [Documentation](https://docs.profileperfect.ai)
+- [Support](mailto:support@profileperfect.ai)
+
+---
+
+**Transform your casual photos into professional headshots with ProfilePerfect AI** 🎯
 
 This will create the tables with their respective columns and RLS policies:
 

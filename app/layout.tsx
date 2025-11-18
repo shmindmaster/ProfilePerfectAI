@@ -18,8 +18,8 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "Headshots AI",
-  description: "Generate awesome headshots in minutes using AI",
+  title: "ProfilePerfect AI",
+  description: "The one-click studio for your professional digital identity - Transform casual photos into studio-quality headshots",
 };
 
 export default function RootLayout({
