@@ -1,0 +1,16 @@
+[2025-11-17 16:49:36] [WARN] Error setting repository secret AZURE_STORAGE_BLOB_ENDPOINT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:36] [WARN] Error setting repository secret AZURE_STORAGE_CONNECTION_STRING: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:36] [WARN] Error setting repository secret AZURE_OPENAI_ENDPOINT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting repository secret AZURE_STORAGE_CONTAINER: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting repository secret AZURE_OPENAI_API_VERSION: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting repository secret COPILOT_MCP_AZURE_OPENAI_API_KEY: flag needs an argument: --body
+[2025-11-17 16:49:37] [WARN] Error setting repository secret AZURE_OPENAI_DEPLOYMENT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting repository secret AZURE_STORAGE_ACCOUNT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret AZURE_STORAGE_BLOB_ENDPOINT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret AZURE_STORAGE_CONNECTION_STRING: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret AZURE_OPENAI_ENDPOINT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret AZURE_STORAGE_CONTAINER: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret AZURE_OPENAI_API_VERSION: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret COPILOT_MCP_AZURE_OPENAI_API_KEY: flag needs an argument: --body
+[2025-11-17 16:49:37] [WARN] Error setting copilot environment secret AZURE_OPENAI_DEPLOYMENT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
+[2025-11-17 16:49:38] [WARN] Error setting copilot environment secret AZURE_STORAGE_ACCOUNT: failed to run git: fatal: not a git repository (or any of the parent directories): .git
