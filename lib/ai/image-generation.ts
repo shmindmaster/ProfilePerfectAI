@@ -1,17 +1,33 @@
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Configuration for ProfilePerfect AI APIs
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.AZURE_OPENAI_ENDPOINT,
-  defaultQuery: { 'api-version': process.env.AZURE_OPENAI_API_VERSION },
-  defaultHeaders: {
-    'api-key': process.env.AZURE_OPENAI_API_KEY,
-  },
-});
+// Check if AI services are properly configured
+const isAIEnabled = !!(process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY) && 
+                    !!(process.env.GOOGLE_NANO_BANANA_API_KEY);
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_NANO_BANANA_API_KEY!);
+// Configuration for ProfilePerfect AI APIs - conditional initialization
+let openai: OpenAI | null = null;
+let genAI: GoogleGenerativeAI | null = null;
+
+if (isAIEnabled) {
+  try {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.AZURE_OPENAI_ENDPOINT,
+      defaultQuery: { 'api-version': process.env.AZURE_OPENAI_API_VERSION },
+      defaultHeaders: {
+        'api-key': process.env.AZURE_OPENAI_API_KEY,
+      },
+    });
+
+    genAI = new GoogleGenerativeAI(process.env.GOOGLE_NANO_BANANA_API_KEY!);
+  } catch (error) {
+    console.warn('AI services initialization failed:', error);
+  }
+}
+
+// Export AI availability status for UI components
+export { isAIEnabled };
 
 // Types for ProfilePerfect AI image operations
 export interface GenerationRequest {
@@ -62,6 +78,27 @@ export interface RetouchedImage {
 export async function generateHeadshots(request: GenerationRequest): Promise<GeneratedImage[]> {
   const startTime = Date.now();
   
+  // Demo mode - return mock results when AI services are not available
+  if (!isAIEnabled || !openai) {
+    console.log('Demo mode: Returning mock headshots');
+    const mockImages: GeneratedImage[] = [];
+    
+    for (let i = 0; i < (request.count || 4); i++) {
+      mockImages.push({
+        id: `demo-headshot-${i + 1}`,
+        url: `https://stmahumsharedapps.blob.core.windows.net/profileperfect-ai/demo-headshot-${i + 1}.jpg`,
+        metadata: {
+          model: 'demo-model',
+          prompt: `Demo ${request.stylePreset} headshot`,
+          timestamp: new Date().toISOString(),
+          processingTime: 2000 + Math.random() * 3000,
+        },
+      });
+    }
+    
+    return mockImages;
+  }
+  
   try {
     // Validate input
     if (request.referenceImages.length < 5 || request.referenceImages.length > 10) {
@@ -72,7 +109,7 @@ export async function generateHeadshots(request: GenerationRequest): Promise<Gen
     const prompt = createGenerationPrompt(request.stylePreset, request.backgroundPreset);
     
     // Generate images using gpt-image-1 with reference images
-    const response = await openai.images.generate({
+    const response = await openai!.images.generate({
       model: 'gpt-image-1',
       prompt: prompt,
       n: request.count || 16,
@@ -115,6 +152,21 @@ export async function generateHeadshots(request: GenerationRequest): Promise<Gen
 export async function retouchImage(request: RetouchRequest): Promise<RetouchedImage> {
   const startTime = Date.now();
   
+  // Demo mode - return mock result when AI services are not available
+  if (!isAIEnabled || !genAI) {
+    console.log('Demo mode: Returning mock retouched image');
+    return {
+      id: 'demo-retouched-image',
+      url: `https://stmahumsharedapps.blob.core.windows.net/profileperfect-ai/demo-retouched-${request.editType}.jpg`,
+      metadata: {
+        originalImageId: 'demo-original',
+        editType: request.editType,
+        intensity: request.intensity,
+        processingTime: 1500 + Math.random() * 2000,
+      },
+    };
+  }
+  
   try {
     // Validate input
     if (!request.sourceImage) {
@@ -126,7 +178,7 @@ export async function retouchImage(request: RetouchRequest): Promise<RetouchedIm
     }
 
     // Get the Nano Banana model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image' });
+    const model = genAI!.getGenerativeModel({ model: 'gemini-2.5-flash-image' });
     
     // Create retouching prompt based on edit type and intensity
     const prompt = createRetouchPrompt(request.editType, request.intensity, request.backgroundPrompt);

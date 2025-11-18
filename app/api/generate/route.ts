@@ -180,8 +180,8 @@ function validateGenerateRequest(body: GenerateRequest): { isValid: boolean; err
     return { isValid: false, error: 'Reference images are required' };
   }
 
-  if (body.referenceImages.length < 5 || body.referenceImages.length > 10) {
-    return { isValid: false, error: 'Must provide 5-10 reference images' };
+  if (body.referenceImages.length < 1 || body.referenceImages.length > 10) {
+    return { isValid: false, error: 'Must provide 1-10 reference images' };
   }
 
   if (!body.stylePreset || typeof body.stylePreset !== 'string') {

@@ -130,7 +130,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       for (const file of files) {
         const blob = await upload(file.name, file, {
           access: "public",
-          handleUploadUrl: "/astria/train-model/image-upload",
+          handleUploadUrl: "/api/astria/train-model/image-upload",
         });
         blobUrls.push(blob.url);
       }
@@ -140,15 +140,16 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     const aggregatedCharacteristics = aggregateCharacteristics(characteristics);
 
     const payload = {
-      urls: blobUrls,
-      name: form.getValues("name").trim(),
-      type: form.getValues("type"),
-      pack: packSlug,
-      characteristics: aggregatedCharacteristics
+      referenceImages: blobUrls,
+      stylePreset: form.getValues("type") === "man" ? "corporate" : form.getValues("type") === "woman" ? "startup" : "professional",
+      backgroundPreset: "studio",
+      count: 4,
+      size: "1024x1024" as const,
+      quality: "high" as const
     };
 
-    // Send the JSON payload to the "/astria/train-model" endpoint
-    const response = await fetch("/astria/train-model", {
+    // Send the JSON payload to the Azure API endpoint
+    const response = await fetch("/api/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
