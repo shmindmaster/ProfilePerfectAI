@@ -58,6 +58,47 @@ npm run dev
 - **Storage**: Vercel Blob
 - **Payments**: Stripe
 - **AI**: OpenAI gpt-image-1, Google Nano Banana
+- **Testing**: Playwright (E2E), TypeScript
+
+## 🧪 Testing
+
+ProfilePerfect AI includes a comprehensive E2E test suite with mobile-first testing.
+
+### Running Tests
+
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run tests in UI mode (interactive)
+npm run test:e2e:ui
+
+# Run tests with browser visible
+npm run test:e2e:headed
+
+# Run mobile tests only
+npm run test:e2e:mobile
+
+# Run desktop tests only
+npm run test:e2e:desktop
+
+# View test report
+npm run test:e2e:report
+```
+
+### Test Coverage
+
+Our E2E test suite covers:
+- Homepage and landing experience (mobile-first)
+- Navigation and routing (all viewports)
+- Image upload flow (validation, limits, mobile camera)
+- AI generation process
+- Authentication and demo mode
+- Responsive layouts (mobile, tablet, desktop)
+- Accessibility (WCAG AA compliance)
+- Error handling and edge cases
+
+For detailed test cases and documentation, see [TESTING.md](./TESTING.md).
 
 ## 📋 Development Phases
 
