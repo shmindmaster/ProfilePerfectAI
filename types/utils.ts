@@ -1,7 +1,7 @@
 import { Database } from "./supabase";
 
-export type modelRow = Database["public"]["Tables"]["models"]["Row"];
-export type sampleRow = Database["public"]["Tables"]["samples"]["Row"];
+export type modelRow = Database["public"]["Tables"]["generation_jobs"]["Row"];
+export type sampleRow = Database["public"]["Tables"]["uploaded_photos"]["Row"];
 
 export type modelRowWithSamples = modelRow & {
   samples: sampleRow[];

@@ -30,10 +30,10 @@ export default function ClientSideModelsList({
       .channel("realtime-models")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "models" },
+        { event: "*", schema: "public", table: "generation_jobs" },
         async (payload: any) => {
           const samples = await supabase
-            .from("samples")
+            .from("uploaded_photos")
             .select("*")
             .eq("modelId", payload.new.id);
 

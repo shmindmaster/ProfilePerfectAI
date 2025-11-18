@@ -17,13 +17,19 @@ export default async function Index() {
   }
 
   const { data: models } = await supabase
-    .from("models")
+    .from("generation_jobs")
     .select(
-      `*, samples (
+      `*, uploaded_photos (
       *
     )`
     )
     .eq("user_id", user.id);
 
-  return <ClientSideModelsList serverModels={models ?? []} />;
+  // Transform uploaded_photos to samples for type compatibility
+  const modelsWithSamples = models?.map(model => ({
+    ...model,
+    samples: model.uploaded_photos
+  }));
+
+  return <ClientSideModelsList serverModels={modelsWithSamples ?? []} />;
 }

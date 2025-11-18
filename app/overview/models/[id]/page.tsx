@@ -23,7 +23,7 @@ export default async function Index({ params }: { params: { id: string } }) {
   }
 
   const { data: model } = await supabase
-    .from("models")
+    .from("generation_jobs")
     .select("*")
     .eq("id", Number(params.id))
     .eq("user_id", user.id)
@@ -38,7 +38,7 @@ export default async function Index({ params }: { params: { id: string } }) {
     .select("*")
     .eq("modelId", model.id);
 
-  const { data: samples } = await supabase.from("samples").select("*").eq("modelId", model.id);
+  const { data: samples } = await supabase.from("uploaded_photos").select("*").eq("modelId", model.id);
 
   return (
     <div id="train-model-container" className="w-full h-full">
