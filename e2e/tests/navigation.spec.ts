@@ -45,7 +45,7 @@ test.describe('Navigation & Routing', () => {
       
       if (closeExists) {
         await closeButton.click();
-        await page.waitForTimeout(300);
+        await expect(mobileMenu).not.toBeVisible();
       }
     } else {
       console.log('Mobile hamburger menu not found - navigation may be inline or simplified');
