@@ -1,0 +1,60 @@
+-- ProfilePerfect AI Schema Rollback Migration
+-- Reverses Phase 2 database schema changes
+
+-- Step 1: Drop indexes created in the main migration
+DROP INDEX IF EXISTS "idx_generation_jobs_user_id";
+DROP INDEX IF EXISTS "idx_generation_jobs_status";
+DROP INDEX IF EXISTS "idx_uploaded_photos_modelId";
+DROP INDEX IF EXISTS "idx_images_source";
+DROP INDEX IF EXISTS "idx_images_favorited";
+DROP INDEX IF EXISTS "idx_images_parent";
+
+-- Step 2: Drop new columns from images table
+ALTER TABLE "public"."images" 
+DROP COLUMN IF EXISTS "is_favorited",
+DROP COLUMN IF EXISTS "parent_image_id",
+DROP COLUMN IF EXISTS "style_preset",
+DROP COLUMN IF EXISTS "background_preset",
+DROP COLUMN IF EXISTS "source";
+
+-- Step 3: Restore original RLS policies
+DROP POLICY IF EXISTS "Enable insert for signed in users" ON "public"."generation_jobs";
+CREATE POLICY "Enable insert for signed in users" ON "public"."generation_jobs" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
+
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON "public"."generation_jobs";
+CREATE POLICY "Enable read access for authenticated users" ON "public"."generation_jobs" FOR SELECT TO "authenticated" USING (("auth"."uid"() = "user_id"));
+
+DROP POLICY IF EXISTS "Enable update from service role" ON "public"."generation_jobs";
+CREATE POLICY "Enable update from service role" ON "public"."generation_jobs" FOR UPDATE TO "service_role" USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Enable delete for authenticated users" ON "public"."generation_jobs";
+CREATE POLICY "Enable delete for authenticated users" ON "public"."generation_jobs" FOR DELETE TO "authenticated" USING (("auth"."uid"() = "user_id"));
+
+-- Restore uploaded_photos policies back to samples policies
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."uploaded_photos";
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."uploaded_photos" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = ( SELECT "generation_jobs"."user_id"
+   FROM "public"."generation_jobs"
+  WHERE ("generation_jobs"."id" = "uploaded_photos"."modelId"))));
+
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON "public"."uploaded_photos";
+CREATE POLICY "Enable read access for authenticated users" ON "public"."uploaded_photos" FOR SELECT TO "authenticated" USING (("auth"."uid"() = ( SELECT "generation_jobs"."user_id"
+   FROM "public"."generation_jobs"
+  WHERE ("generation_jobs"."id" = "uploaded_photos"."modelId"))));
+
+DROP POLICY IF EXISTS "Enable updates for authenticated users to uploaded_photos" ON "public"."uploaded_photos";
+CREATE POLICY "Enable updates for authenticated users to uploaded_photos" ON "public"."uploaded_photos" FOR UPDATE TO "authenticated" WITH CHECK (("auth"."uid"() = ( SELECT "generation_jobs"."user_id"
+   FROM "public"."generation_jobs"
+  WHERE ("generation_jobs"."id" = "uploaded_photos"."modelId"))));
+
+-- Restore images policies
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON "public"."images";
+CREATE POLICY "Enable read access for all authenticated users" ON "public"."images" FOR SELECT TO "authenticated" USING (("auth"."uid"() = ( SELECT "generation_jobs"."user_id"
+   FROM "public"."generation_jobs"
+  WHERE ("generation_jobs"."id" = "images"."modelId"))));
+
+-- Step 4: Rename tables back to original names
+ALTER TABLE "public"."generation_jobs" RENAME TO "models";
+ALTER TABLE "public"."uploaded_photos" RENAME TO "samples";
+
+-- Note: Foreign key constraints should automatically reference the renamed tables
+-- RLS policies should also automatically reference the renamed tables
