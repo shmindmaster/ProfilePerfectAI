@@ -1,10 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Database } from "@/types/supabase";
 import { modelRowWithSamples } from "@/types/utils";
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { FaImages } from "react-icons/fa";
 import ModelsTable from "../ModelsTable";
 
@@ -19,69 +16,48 @@ type ClientSideModelsListProps = {
 export default function ClientSideModelsList({
   serverModels,
 }: ClientSideModelsListProps) {
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-  );
-  const [models, setModels] = useState<modelRowWithSamples[]>(serverModels);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("realtime-models")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "generation_jobs" },
-        async (payload: any) => {
-          const samples = await supabase
-            .from("uploaded_photos")
-            .select("*")
-            .eq("modelId", payload.new.id);
-
-          const newModel: modelRowWithSamples = {
-            ...payload.new,
-            samples: samples.data,
-          };
-
-          const dedupedModels = models.filter(
-            (model) => model.id !== payload.old?.id
-          );
-
-          setModels([...dedupedModels, newModel]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, models, setModels]);
+  // TODO: Implement real-time updates with PostgreSQL or polling
+  // For now, just display the server-side data from Azure PostgreSQL
+  
+  if (!serverModels || serverModels.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <FaImages className="h-16 w-16 text-gray-400 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          No models yet
+        </h3>
+        <p className="text-gray-600 mb-6 max-w-md">
+          Get started by creating your first AI model to generate professional headshots.
+        </p>
+        <Link href="/overview/models/train/profileperfect">
+          <Button>Create your first model</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div id="train-model-container" className="w-full">
-      {models && models.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-row gap-4 w-full justify-between items-center text-center">
-            <h1>Your models</h1>
-            <Link href={packsIsEnabled ? "/overview/packs" : "/overview/models/train/raw-tune"} className="w-fit">
-              <Button size={"sm"}>
-                Train model
-              </Button>
-            </Link>
-          </div>
-          <ModelsTable models={models} />
-        </div>
-      )}
-      {models && models.length === 0 && (
-        <div className="flex flex-col gap-4 items-center">
-          <FaImages size={64} className="text-gray-500" />
-          <h1 className="text-2xl">
-            Get started by training your first model.
-          </h1>
-          <div>
-            <Link href={packsIsEnabled ? "/overview/packs" : "/overview/models/train/raw-tune"}>
-              <Button size={"lg"}>Train model</Button>
-            </Link>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Your Models</h2>
+        <Link href="/overview/models/train/profileperfect">
+          <Button>Create New Model</Button>
+        </Link>
+      </div>
+      
+      <ModelsTable models={serverModels} />
+      
+      {packsIsEnabled && (
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">
+            Want more models?
+          </h3>
+          <p className="text-blue-700 mb-4">
+            Check out our model packs for additional styles and presets.
+          </p>
+          <Link href="/overview/packs">
+            <Button variant="outline">Browse Model Packs</Button>
+          </Link>
         </div>
       )}
     </div>

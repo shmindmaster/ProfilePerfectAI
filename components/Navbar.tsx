@@ -70,7 +70,7 @@ export default async function Navbar() {
               <Link href="/login" className="hidden sm:block text-sm font-medium hover:text-primary transition-colors">
                 Login
               </Link>
-              <Link href="/login">
+              <Link href="/overview/models/train/profileperfect">
                 <Button>Create headshots</Button>
               </Link>
             </>
