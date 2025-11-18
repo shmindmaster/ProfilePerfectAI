@@ -1,4 +1,4 @@
-import TrainModelZone from "@/components/TrainModelZone";
+import ProfilePerfectGenerateZone from "@/components/ProfilePerfectGenerateZone";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +15,7 @@ const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
 export default async function Index({ params }: { params: { pack : string } }) {
   
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       <div
         id="train-model-container"
         className="flex flex-1 flex-col gap-2 px-2"
@@ -28,13 +28,13 @@ export default async function Index({ params }: { params: { pack : string } }) {
         </Link>
         <Card>
           <CardHeader>
-            <CardTitle>Train Model</CardTitle>
+            <CardTitle>Generate Professional Headshots</CardTitle>
             <CardDescription>
-              Choose a name, type, and upload some photos to get started.
+              Upload 5-10 reference photos and choose your professional style to create stunning headshots with ProfilePerfect AI.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
-            <TrainModelZone packSlug={params.pack} />
+            <ProfilePerfectGenerateZone />
           </CardContent>
         </Card>
       </div>
