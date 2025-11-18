@@ -1,12 +1,15 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
-
 import type { NextRequest } from 'next/server'
-import { Database } from './types/supabase'
 
 export async function middleware(req: NextRequest) {
+  // TODO: Implement proper authentication middleware with NextAuth.js
+  // For now, just pass through all requests
   const res = NextResponse.next()
-  const supabase = createMiddlewareClient<Database>({ req, res })
-  await supabase.auth.getSession()
   return res
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 }

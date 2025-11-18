@@ -3,9 +3,7 @@ import { Icons } from "@/components/icons";
 import ClientSideModel from "@/components/realtime/ClientSideModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Database } from "@/types/supabase";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { Pool } from 'pg';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FaArrowLeft } from "react-icons/fa";
@@ -13,32 +11,45 @@ import { FaArrowLeft } from "react-icons/fa";
 export const dynamic = "force-dynamic";
 
 export default async function Index({ params }: { params: { id: string } }) {
-  const supabase = createServerComponentClient<Database>({ cookies });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // TODO: Add proper authentication later - for now using mock user
+  const userId = 'mock-user-id';
+  
+  const pool = new Pool({
+    connectionString: process.env.AZURE_POSTGRES_URL,
+  });
+  
+  const client = await pool.connect();
+  
+  try {
+    const modelResult = await client.query(
+      'SELECT * FROM generation_jobs WHERE id = $1 AND user_id = $2',
+      [Number(params.id), userId]
+    );
 
-  if (!user) {
-    return <Login />;
-  }
+    const model = modelResult.rows[0];
 
-  const { data: model } = await supabase
-    .from("generation_jobs")
-    .select("*")
-    .eq("id", Number(params.id))
-    .eq("user_id", user.id)
-    .single();
+    if (!model) {
+      return <div>Model not found</div>;
+    }
 
   if (!model) {
-    redirect("/overview");
-  }
+      redirect("/overview");
+    }
 
-  const { data: images } = await supabase
-    .from("images")
-    .select("*")
-    .eq("modelId", model.id);
+    // Get images for this model
+    const imagesResult = await client.query(
+      'SELECT * FROM images WHERE model_id = $1 ORDER BY created_at DESC',
+      [model.id]
+    );
 
-  const { data: samples } = await supabase.from("uploaded_photos").select("*").eq("modelId", model.id);
+    // Get uploaded photos for this model
+    const samplesResult = await client.query(
+      'SELECT * FROM uploaded_photos WHERE model_id = $1 ORDER BY created_at DESC',
+      [model.id]
+    );
+
+    const images = imagesResult.rows;
+    const samples = samplesResult.rows;
 
   return (
     <div id="train-model-container" className="w-full h-full">
@@ -68,4 +79,12 @@ export default async function Index({ params }: { params: { id: string } }) {
       <ClientSideModel samples={samples ?? []} serverModel={model} serverImages={images ?? []} />
     </div>
   );
+    
+  } catch (error) {
+    console.error('Error fetching model:', error);
+    return <div>Error loading model</div>;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }

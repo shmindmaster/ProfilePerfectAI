@@ -1,18 +1,14 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { Pool } from 'pg';
 import { NextRequest, NextResponse } from 'next/server';
 import { retouchImage, RetouchRequest } from '@/lib/ai/image-generation';
-import { Database } from '@/types/supabase';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Initialize Supabase service client for background operations
-const supabaseService = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.AZURE_POSTGRES_URL,
+});
 
 interface RetouchApiRequest {
   sourceImageId: number;
@@ -34,23 +30,12 @@ interface RetouchApiResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<RetouchApiResponse>> {
+  const client = await pool.connect();
+  
   try {
-    // Initialize Supabase client
-    const supabase = createServerComponentClient<Database>({ cookies });
+    // TODO: Add proper authentication later - for now using mock user
+    const userId = 'mock-user-id';
     
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     // Parse request body
     const body: RetouchApiRequest = await request.json();
     
@@ -63,34 +48,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<RetouchAp
       );
     }
 
-    // Verify user owns the source image
-    const { data: sourceImage, error: imageError } = await supabase
-      .from('images')
-      .select(`
-        *,
-        generation_jobs!inner (
-          user_id
-        )
-      `)
-      .eq('id', body.sourceImageId)
-      .eq('generation_jobs.user_id', user.id)
-      .single();
-
-    if (imageError || !sourceImage) {
-      return NextResponse.json(
-        { success: false, error: 'Source image not found or access denied' },
-        { status: 404 }
-      );
-    }
-
     // Check user credits
-    const { data: credits } = await supabase
-      .from('credits')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    const requiredCredits = calculateRetouchCredits(body.editType);
+    const creditsResult = await client.query(
+      'SELECT credits FROM credits WHERE user_id = $1',
+      [userId]
+    );
+    
+    const credits = creditsResult.rows[0];
+    const requiredCredits = calculateRequiredCredits(body.editType);
     
     if (!credits || credits.credits < requiredCredits) {
       return NextResponse.json(
@@ -99,39 +64,45 @@ export async function POST(request: NextRequest): Promise<NextResponse<RetouchAp
       );
     }
 
-    // Create retouch job record
-    const { data: retouchJob, error: jobError } = await supabase
-      .from('generation_jobs')
-      .insert({
-        user_id: user.id,
-        name: `ProfilePerfect Retouch - ${body.editType}`,
-        type: 'profileperfect-retouch',
-        status: 'processing',
-        modelId: `retouch_${Date.now()}_${user.id.slice(0, 8)}`,
-      })
-      .select()
-      .single();
+    // Verify source image exists and belongs to user
+    const imageResult = await client.query(
+      `SELECT i.* FROM images i 
+       JOIN generation_jobs gj ON i.model_id = gj.id 
+       WHERE i.id = $1 AND gj.user_id = $2`,
+      [body.sourceImageId, userId]
+    );
 
-    if (jobError || !retouchJob) {
-      console.error('Error creating retouch job:', jobError);
+    if (imageResult.rows.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Failed to create retouch job' },
-        { status: 500 }
+        { success: false, error: 'Source image not found' },
+        { status: 404 }
       );
     }
 
+    // Create retouch job record
+    const jobResult = await client.query(
+      `INSERT INTO generation_jobs (user_id, name, type, status, model_id, created_at) 
+       VALUES ($1, $2, $3, $4, $5, NOW()) 
+       RETURNING id, status, created_at`,
+      [
+        userId,
+        `ProfilePerfect Retouch - ${body.editType}`,
+        'profileperfect-retouch',
+        'processing',
+        `retouch_${Date.now()}_${userId.slice(0, 8)}`
+      ]
+    );
+
+    const retouchJob = jobResult.rows[0];
+
     // Deduct credits
-    const { error: creditError } = await supabase
-      .from('credits')
-      .update({ credits: credits.credits - requiredCredits })
-      .eq('user_id', user.id);
+    await client.query(
+      'UPDATE credits SET credits = credits - $1 WHERE user_id = $2',
+      [requiredCredits, userId]
+    );
 
-    if (creditError) {
-      console.error('Error deducting credits:', creditError);
-    }
-
-    // Start retouching process in background
-    startRetouchProcess(retouchJob.id, body, sourceImage, user.id);
+    // Start retouch process in background
+    startRetouchProcess(retouchJob.id, body, userId);
 
     // Return immediate response
     return NextResponse.json({
@@ -140,7 +111,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RetouchAp
         id: retouchJob.id,
         parentImageId: body.sourceImageId,
         status: retouchJob.status,
-        estimatedCompletion: new Date(Date.now() + 30000).toISOString(), // 30 seconds
+        estimatedCompletion: new Date(Date.now() + 60000).toISOString(), // 1 minute
       },
     });
 
@@ -150,6 +121,62 @@ export async function POST(request: NextRequest): Promise<NextResponse<RetouchAp
       { success: false, error: 'Internal server error' },
       { status: 500 }
     );
+  } finally {
+    client.release();
+  }
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const client = await pool.connect();
+  
+  try {
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get('jobId');
+    
+    if (!jobId) {
+      return NextResponse.json(
+        { success: false, error: 'Job ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get job status and retouched images
+    const jobResult = await client.query(
+      'SELECT * FROM generation_jobs WHERE id = $1',
+      [parseInt(jobId)]
+    );
+
+    if (jobResult.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Job not found' },
+        { status: 404 }
+      );
+    }
+
+    const job = jobResult.rows[0];
+
+    // Get retouched images
+    const imagesResult = await client.query(
+      'SELECT * FROM images WHERE model_id = $1 ORDER BY created_at DESC',
+      [job.id]
+    );
+
+    return NextResponse.json({
+      success: true,
+      job: {
+        ...job,
+        images: imagesResult.rows,
+      },
+    });
+
+  } catch (error) {
+    console.error('Error in /api/retouch GET:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  } finally {
+    client.release();
   }
 }
 
@@ -165,177 +192,109 @@ function validateRetouchRequest(body: RetouchApiRequest): { isValid: boolean; er
     return { isValid: false, error: 'Edit type must be retouch, background, or both' };
   }
 
-  if (typeof body.intensity !== 'number' || body.intensity < 0.1 || body.intensity > 1.0) {
-    return { isValid: false, error: 'Intensity must be between 0.1 and 1.0' };
+  if (typeof body.intensity !== 'number' || body.intensity < 1 || body.intensity > 10) {
+    return { isValid: false, error: 'Intensity must be a number between 1 and 10' };
   }
 
-  if (body.backgroundPrompt && typeof body.backgroundPrompt !== 'string') {
-    return { isValid: false, error: 'Background prompt must be a string' };
+  if (body.editType === 'background' && !body.backgroundPrompt) {
+    return { isValid: false, error: 'Background prompt is required for background edits' };
   }
 
   if (typeof body.preserveIdentity !== 'boolean') {
-    return { isValid: false, error: 'Preserve identity must be a boolean' };
+    return { isValid: false, error: 'Preserve identity must be true or false' };
   }
 
   return { isValid: true };
 }
 
 /**
- * Calculate required credits based on retouch type
+ * Calculate required credits based on retouch parameters
  */
-function calculateRetouchCredits(editType: string): number {
+function calculateRequiredCredits(editType: string): number {
   switch (editType) {
     case 'retouch':
-      return 1; // 1 credit for basic retouching
+      return 2;
     case 'background':
-      return 1; // 1 credit for background replacement
+      return 3;
     case 'both':
-      return 2; // 2 credits for both operations
+      return 4;
     default:
-      return 1;
+      return 2;
   }
 }
 
 /**
- * Start the AI retouching process in background
+ * Start the retouch process in background
  */
-async function startRetouchProcess(
-  jobId: number, 
-  request: RetouchApiRequest, 
-  sourceImage: any, 
-  userId: string
-): Promise<void> {
+async function startRetouchProcess(jobId: number, request: RetouchApiRequest, userId: string): Promise<void> {
+  const client = await pool.connect();
+  
   try {
     console.log(`Starting retouch process for job ${jobId}`);
     
-    // Update job status to 'retouching' using service client
-    await supabaseService
-      .from('generation_jobs')
-      .update({ status: 'retouching' })
-      .eq('id', jobId);
+    // Update job status to 'generating'
+    await client.query(
+      'UPDATE generation_jobs SET status = $1 WHERE id = $2',
+      ['generating', jobId]
+    );
 
-    // Create retouch request for AI abstraction layer
+    // Get source image
+    const sourceImageResult = await client.query(
+      'SELECT url FROM images WHERE id = $1',
+      [request.sourceImageId]
+    );
+
+    const sourceImage = sourceImageResult.rows[0];
+    if (!sourceImage) {
+      throw new Error('Source image not found');
+    }
+
+    // Generate retouch request
     const retouchRequest: RetouchRequest = {
-      sourceImage: sourceImage.uri, // This would be base64 encoded image data
+      sourceImage: sourceImage.url,
       editType: request.editType,
       intensity: request.intensity,
       backgroundPrompt: request.backgroundPrompt,
       preserveIdentity: request.preserveIdentity,
     };
 
-    const retouchedImage = await retouchImage(retouchRequest);
+    const retouchedImages = await retouchImage(retouchRequest);
 
-    // Store retouched image in database using service client
-    const { data: storedImage, error: storeError } = await supabaseService
-      .from('images')
-      .insert({
-        modelId: jobId,
-        uri: retouchedImage.url,
-        parent_image_id: sourceImage.id,
-        style_preset: sourceImage.style_preset,
-        background_preset: request.backgroundPrompt || sourceImage.background_preset,
-        source: 'generated',
-      })
-      .select()
-      .single();
-
-    if (storeError) {
-      console.error('Error storing retouched image:', storeError);
-      throw storeError;
-    }
-
-    // Update job status to 'completed' using service client
-    await supabaseService
-      .from('generation_jobs')
-      .update({ 
-        status: 'completed',
-        name: `ProfilePerfect Retouch - ${request.editType} (completed)`
-      })
-      .eq('id', jobId);
-
-    console.log(`Retouch completed for job ${jobId}. Created image ID: ${storedImage.id}`);
-
-  } catch (error) {
-    console.error(`Retouch failed for job ${jobId}:`, error);
-    
-    // Update job status to 'failed' using service client
-    await supabaseService
-      .from('generation_jobs')
-      .update({ status: 'failed' })
-      .eq('id', jobId);
-  }
-}
-
-/**
- * GET endpoint to check retouch status
- */
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  try {
-    const supabase = createServerComponentClient<Database>({ cookies });
-    
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+    // Store retouched images in database
+    const images = Array.isArray(retouchedImages) ? retouchedImages : [retouchedImages];
+    for (const image of images) {
+      await client.query(
+        `INSERT INTO images (model_id, url, is_favorited, style_preset, background_preset, source, parent_image_id, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+        [
+          jobId,
+          image.url,
+          false,
+          'retouched',
+          request.editType,
+          'profileperfect-ai',
+          request.sourceImageId
+        ]
       );
     }
 
-    // Get job ID from query params
-    const { searchParams } = new URL(request.url);
-    const jobId = searchParams.get('jobId');
-
-    if (!jobId) {
-      return NextResponse.json(
-        { success: false, error: 'Job ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Get job details with retouched images
-    const { data: job, error: jobError } = await supabase
-      .from('generation_jobs')
-      .select(`
-        *,
-        images (
-          id,
-          uri,
-          is_favorited,
-          style_preset,
-          background_preset,
-          parent_image_id,
-          created_at
-        )
-      `)
-      .eq('id', parseInt(jobId))
-      .eq('user_id', user.id)
-      .single();
-
-    if (jobError || !job) {
-      return NextResponse.json(
-        { success: false, error: 'Job not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      job: {
-        ...job,
-        images: job.images || [],
-      },
-    });
-
-  } catch (error) {
-    console.error('Error in /api/retouch GET:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+    // Update job status to 'completed'
+    await client.query(
+      'UPDATE generation_jobs SET status = $1 WHERE id = $2',
+      ['completed', jobId]
     );
+
+    console.log(`Retouch completed for job ${jobId} with ${images.length} images`);
+
+  } catch (error) {
+    console.error('Error in retouch process:', error);
+    
+    // Update job status to 'failed'
+    await client.query(
+      'UPDATE generation_jobs SET status = $1 WHERE id = $2',
+      ['failed', jobId]
+    );
+  } finally {
+    client.release();
   }
 }

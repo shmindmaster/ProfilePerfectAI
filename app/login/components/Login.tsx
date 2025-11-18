@@ -3,13 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Database } from "@/types/supabase";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import disposableDomains from "disposable-email-domains";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { AiOutlineGoogle } from "react-icons/ai";
-import { WaitingForMagicLink } from "./WaitingForMagicLink";
 
 type Inputs = {
   email: string;
@@ -19,157 +15,105 @@ export const Login = ({
   host,
   searchParams,
 }: {
-  host: string | null;
+  host?: string;
   searchParams?: { [key: string]: string | string[] | undefined };
 }) => {
-  const supabase = createClientComponentClient<Database>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitted },
+    formState: { errors },
   } = useForm<Inputs>();
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
-      await signInWithMagicLink(data.email);
-      setTimeout(() => {
-        setIsSubmitting(false);
-        toast({
-          title: "Email sent",
-          description: "Check your inbox for a magic link to sign in.",
-          duration: 5000,
-        });
-        setIsMagicLinkSent(true);
-      }, 1000);
-    } catch (error) {
-      setIsSubmitting(false);
+      // TODO: Implement proper authentication with NextAuth.js
       toast({
-        title: "Something went wrong",
-        variant: "destructive",
-        description:
-          "Please try again, if the problem persists, contact us at hello@tryleap.ai",
+        title: "Authentication temporarily disabled",
+        description: "Please check back later. Azure migration in progress.",
         duration: 5000,
       });
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login failed",
+        description: "An error occurred during login.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  let inviteToken = null;
-  if (searchParams && "inviteToken" in searchParams) {
-    inviteToken = searchParams["inviteToken"];
-  }
-
-  const protocol = host?.includes("localhost") ? "http" : "https";
-  const redirectUrl = `${protocol}://${host}/auth/callback`;
-
-  console.log({ redirectUrl });
-
-  const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-      },
+  const handleGoogleLogin = async () => {
+    // TODO: Implement Google OAuth with NextAuth.js
+    toast({
+      title: "Google login temporarily disabled",
+      description: "Please check back later. Azure migration in progress.",
+      duration: 5000,
     });
-
-    console.log(data, error);
   };
-
-  const signInWithMagicLink = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
-
-    if (error) {
-      console.log(`Error: ${error.message}`);
-    }
-  };
-
-  if (isMagicLinkSent) {
-    return (
-      <WaitingForMagicLink toggleState={() => setIsMagicLinkSent(false)} />
-    );
-  }
 
   return (
-    <>
-      <div className="flex items-center justify-center p-8">
-        <div className="flex flex-col gap-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 p-4 rounded-xl max-w-sm w-full">
-          <h1 className="text-xl">Welcome</h1>
-          <p className="text-xs opacity-60">
-            Sign in or create an account to get started.
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold">Sign in to ProfilePerfect AI</h2>
+          <p className="mt-2 text-gray-600">
+            Transform your photos into professional headshots
           </p>
-          {/* <Button
-            onClick={signInWithGoogle}
-            variant={"outline"}
-            className="font-semibold"
-          >
-            <AiOutlineGoogle size={20} />
-            Continue with Google
-          </Button>
-          <OR /> */}
-
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-2"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  {...register("email", {
-                    required: true,
-                    validate: {
-                      emailIsValid: (value: string) =>
-                        /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ||
-                        "Please enter a valid email",
-                      emailDoesntHavePlus: (value: string) =>
-                        /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ||
-                        "Email addresses with a '+' are not allowed",
-                      emailIsntDisposable: (value: string) =>
-                        !disposableDomains.includes(value.split("@")[1]) ||
-                        "Please use a permanent email address",
-                    },
-                  })}
-                />
-                {isSubmitted && errors.email && (
-                  <span className={"text-xs text-red-400"}>
-                    {errors.email?.message || "Email is required to sign in"}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <Button
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
-              variant="outline"
-              className="w-full"
-              type="submit"
-            >
-              Continue with Email
-            </Button>
-          </form>
         </div>
-      </div>
-    </>
-  );
-};
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div>
+            <Input
+              type="email"
+              placeholder="Enter your email"
+              {...register("email", {
+                required: "Email is required",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Invalid email address",
+                },
+              })}
+              className="w-full"
+            />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            )}
+          </div>
 
-export const OR = () => {
-  return (
-    <div className="flex items-center my-1">
-      <div className="border-b flex-grow mr-2 opacity-50" />
-      <span className="text-sm opacity-50">OR</span>
-      <div className="border-b flex-grow ml-2 opacity-50" />
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? "Sending..." : "Sign in with Email"}
+          </Button>
+        </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+          </div>
+        </div>
+
+        <Button
+          onClick={handleGoogleLogin}
+          variant="outline"
+          className="w-full"
+        >
+          <AiOutlineGoogle className="mr-2 h-4 w-4" />
+          Continue with Google
+        </Button>
+      </div>
     </div>
   );
 };
