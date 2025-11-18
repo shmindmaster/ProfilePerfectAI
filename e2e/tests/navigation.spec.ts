@@ -19,7 +19,7 @@ test.describe('Navigation & Routing', () => {
     const hamburgerMenu = page.locator('button[aria-label*="menu" i], button[aria-label*="navigation" i], [class*="hamburger"], [class*="menu-toggle"]').first();
     
     // If no hamburger found, check if navigation is inline (some mobile designs show all links)
-    const hamburgerExists = await hamburger.count() > 0;
+    const hamburgerExists = await hamburgerMenu.count() > 0;
     
     if (hamburgerExists) {
       await expect(hamburgerMenu).toBeVisible();
