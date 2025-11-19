@@ -17,10 +17,10 @@ Stop using that cropped vacation photo. ProfilePerfect AI transforms your casual
 ### Prerequisites
 
 - Node.js 18+ 
-- A Supabase project
-- OpenAI API key
-- Google AI API key
-- Stripe account (for payments)
+- Azure PostgreSQL database (shared: `pg-shared-apps-eastus2`)
+- Azure OpenAI API key (shared: `shared-openai-eastus2`)
+- Azure Storage connection string (shared: `stmahumsharedapps`)
+- Stripe account (for payments, optional)
 
 ### Installation
 
@@ -53,11 +53,10 @@ npm run dev
 - **Frontend**: Next.js 14, React 18, TypeScript
 - **Styling**: Tailwind CSS, Shadcn/ui components
 - **Backend**: Next.js API routes
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Storage**: Vercel Blob
+- **Database**: Azure PostgreSQL (`profileperfect_db` on `pg-shared-apps-eastus2`)
+- **Storage**: Azure Blob Storage (`stmahumsharedapps`)
 - **Payments**: Stripe
-- **AI**: OpenAI gpt-image-1, Google Nano Banana
+- **AI**: Azure OpenAI (`gpt-image-1-mini` for image generation)
 - **Testing**: Playwright (E2E), TypeScript
 
 ## 🧪 Testing
@@ -175,34 +174,48 @@ For yarn:
 yarn
 ```
 
-### 5. Magic Link Auth (Supabase)
+### 5. Database Setup
 
-In your supabase [dashboard](https://supabase.com/dashboard/), select newly created project, go to Authentication -> Email Templates -> Magic Link and paste the following template:
+Run the database setup script to create tables and seed sample data:
 
+```bash
+# Set environment variables
+export POSTGRES_PASSWORD="WalidSahab112025"
+export POSTGRES_USER="pgadmin"
+export POSTGRES_HOST="pg-shared-apps-eastus2.postgres.database.azure.com"
+export POSTGRES_DB="profileperfect_db"
+export DATABASE_URL="postgresql://pgadmin:WalidSahab112025@pg-shared-apps-eastus2.postgres.database.azure.com:5432/profileperfect_db?sslmode=require"
+
+# Run setup
+node scripts/setup-azure-db.js
 ```
-<h2>Magic Link</h2>
-<p>Follow this link to login:</p>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Log In</a></p>
+
+Or use PowerShell:
+
+```powershell
+$env:DATABASE_URL = "postgresql://pgadmin:WalidSahab112025@pg-shared-apps-eastus2.postgres.database.azure.com:5432/profileperfect_db?sslmode=require"
+node scripts/setup-azure-db.js
 ```
 
-Then, make sure to setup your site URL and redirect urls in the supabase dashboard under Authentication -> URL Configuration.
+### 6. Configure Azure Resources
 
-For example:
+Get your Azure credentials:
 
-Site URL: https://headshots-starter.vercel.app
+```bash
+# Azure OpenAI API Key
+az cognitiveservices account keys list \
+  --resource-group rg-shared-ai \
+  --name shared-openai-eastus2 \
+  --query key1 -o tsv
 
-Redirect URL: https://headshots-starter.vercel.app/**
+# Azure Storage Connection String
+az storage account show-connection-string \
+  --resource-group rg-shared-ai \
+  --name stmahumsharedapps \
+  --query connectionString -o tsv
+```
 
-### 6. Create a [Astria](https://www.astria.ai/) account
-
-In your `.env.local` file:
-
-- Fill in `your_api_key` with your [Astria API key](https://www.astria.ai/users/edit#api)
-- Fill in `your-webhook-secret` with any arbitrary URL friendly string eg.`shadf892yr398hq23h`
-- Fill in `your-deployment-url` with a url to catch webhooks from Astria. This will be your vercel deployment url or Ngrok tunnel locally (eg. https://{your-hosted-url}/astria/train-webhook)
-- Fill in `your-blob-read-write-token` with your Vercel Blob token (steps below)
-
-If your production webhook callbacks do not seem to be working, make sure the callback URL is not of a Vercel dedicated branch deployment which requires authentication, in which case you will not see the callback in the logs.
+Add these to your `.env.local` file.
 ### 7. Configure the Announcement Bar (Optional)
 
 To enable and customize the announcement bar at the top of your site, configure these environment variables in your `.env.local`:
@@ -214,17 +227,17 @@ NEXT_PUBLIC_ANNOUNCEMENT_MESSAGE="Your announcement message here" # the message 
 ```
 
 
-### 8. Configure [Vercel Blob](https://vercel.com/docs/storage/vercel-blob/quickstart#client-uploads) for image uploads
+### 8. Azure Storage Containers
 
-In your Vercel project, create a [Blob store](https://vercel.com/docs/storage/vercel-blob/quickstart#create-a-blob-store)
+The setup script will create the required containers automatically:
 
-- In your Vercel dashboard, select the Storage tab, then select the Connect Database button.
-- Under the Create New tab, select Blob and then the Continue button.
+```powershell
+powershell scripts/profileperfect-setup.ps1
+```
 
-Then to configure in your .env:
-
-- In your Vercel dashboard, select the Settings tab, then select the Environment Variables tab.
-- Copy your `BLOB_READ_WRITE_TOKEN` to your .env
+This creates:
+- `profileperfect-uploads` - For user-uploaded photos
+- `profileperfect-generated` - For generated headshots
 
 ### 9. Create a [Resend](https://resend.com/) account (Optional)
 
