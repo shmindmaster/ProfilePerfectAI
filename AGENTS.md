@@ -23,20 +23,20 @@ This section describes a **Next.js 15 full-stack application** for AI-powered fl
 |---------|----------|----------|
 | **Azure OpenAI** | `shared-openai-eastus2` | https://shared-openai-eastus2.openai.azure.com/ |
 | **Azure Storage** | `stmahumsharedapps` | https://stmahumsharedapps.blob.core.windows.net/ |
-| **Key Vault** | `kv-mahum-shared-apps` | For secrets management |
+| **Secrets** | env vars (.env.local, GitHub Secrets, Azure app settings) | n/a |
 
 ### Environment Variables
 
 ```env
 # Azure OpenAI (Primary AI Provider)
 AZURE_OPENAI_ENDPOINT=https://shared-openai-eastus2.openai.azure.com/
-AZURE_OPENAI_KEY=<from_key_vault>
+AZURE_OPENAI_KEY=__SET_IN_ENV_VARS__
 AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-5.1
 AZURE_OPENAI_EMBED_DEPLOYMENT=text-embedding-3-large
 
 # Azure Storage
 AZURE_STORAGE_BLOB_ENDPOINT=https://stmahumsharedapps.blob.core.windows.net/
-AZURE_STORAGE_CONNECTION_STRING=<from_key_vault>
+AZURE_STORAGE_CONNECTION_STRING=__SET_IN_ENV_VARS__
 AZURE_STORAGE_CONTAINER=flashmaster
 ```
 
@@ -140,8 +140,7 @@ export async function POST(request: NextRequest) {
 
 ✅ **ALWAYS USE:**
 - Shared Azure platform resources
-- Environment variables from `.env.local` (dev) or Azure Portal (prod)
-- Key Vault references for secrets in production
+- Environment variables from `.env.local` (dev), GitHub Secrets, or Azure Portal app settings (prod)
 
 ---
 

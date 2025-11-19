@@ -8,9 +8,9 @@ AI-powered flashcard learning platform built with Next.js 15, deployed to Azure 
 
 **MANDATORY: Use shared Azure platform resources**
 
-- Azure OpenAI: `shared-openai-eastus2` (gpt-5.1, text-embedding-3-large)
-- Azure Storage: `stmahumsharedapps` (container: flashmaster)
-- Azure Key Vault: `kv-mahum-shared-apps` (secrets)
+- Azure OpenAI: `shared-openai-eastus2` (gpt-5.1, text-embedding-3-small for this repo)
+- Azure Storage: `stmahumsharedapps` (containers such as profileperfect-uploads/profileperfect-generated)
+- Secrets: environment variables (`.env.local` in dev, GitHub Secrets + Azure app settings in prod). Do **not** assume Key Vault.
 
 **PROHIBITED: Never introduce**
 
