@@ -1,8 +1,10 @@
-# FlashMaster - Agent Development Guide
+# ProfilePerfectAI - Agent Development Guide
 
-## Architecture Overview
+> NOTE: This file was cloned from a generic FlashMaster template. The sections below describe a generic Next.js + Azure OpenAI app and are **not** specific to ProfilePerfectAI. For ProfilePerfectAI architecture and agent behavior, see README.md, lib/ai/image-generation.ts, lib/azure-storage.ts, app/api/*, and copilot-instructions.md in this repo.
 
-FlashMaster is a **Next.js 15 full-stack application** for AI-powered flashcard learning, deployed to Azure Static Web Apps.
+## Architecture Overview (generic template)
+
+This section describes a **Next.js 15 full-stack application** for AI-powered flashcard learning (FlashMaster template), not ProfilePerfectAI. Use it only for general Azure OpenAI / Next.js patterns.
 
 ### Tech Stack
 - **Frontend**: Next.js 15.3.2, React 19, Radix UI, Tailwind CSS 4, Zustand
