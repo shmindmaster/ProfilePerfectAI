@@ -3,8 +3,24 @@ const fs = require('fs');
 const path = require('path');
 
 // Azure PostgreSQL connection
+// Use DATABASE_URL or construct from environment variables
+const getDatabaseUrl = () => {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+  if (process.env.AZURE_POSTGRES_URL) {
+    return process.env.AZURE_POSTGRES_URL;
+  }
+  // Default connection for profileperfect_db
+  const password = process.env.POSTGRES_PASSWORD || 'WalidSahab112025';
+  const user = process.env.POSTGRES_USER || 'pgadmin';
+  const host = process.env.POSTGRES_HOST || 'pg-shared-apps-eastus2.postgres.database.azure.com';
+  const db = process.env.POSTGRES_DB || 'profileperfect_db';
+  return `postgresql://${user}:${password}@${host}:5432/${db}?sslmode=require`;
+};
+
 const pool = new Pool({
-  connectionString: process.env.AZURE_POSTGRES_URL || 'postgresql://pgadmin:WalidSahab112025@pg-shared-apps-eastus2.postgres.database.azure.com:5432/postgres?sslmode=require',
+  connectionString: getDatabaseUrl(),
 });
 
 async function setupDatabase() {
