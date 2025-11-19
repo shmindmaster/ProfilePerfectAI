@@ -173,3 +173,4 @@ NEXT_PUBLIC_STRIPE_IS_ENABLED=false
 
 All setup steps are complete. The application is ready to start!
 
+
