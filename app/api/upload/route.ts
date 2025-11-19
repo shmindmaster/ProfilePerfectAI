@@ -43,6 +43,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ 
     message: 'Azure Storage upload endpoint is ready',
     provider: 'Azure Storage',
-    container: process.env.AZURE_STORAGE_CONTAINER || 'profileperfect-ai'
+    container: process.env.APP_BLOB_CONTAINER_UPLOADS || 'profileperfect-uploads'
   });
 }

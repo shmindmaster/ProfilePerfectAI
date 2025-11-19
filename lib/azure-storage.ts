@@ -1,11 +1,15 @@
 import { BlobServiceClient, BlockBlobClient } from '@azure/storage-blob';
 
-// Azure Storage configuration
+// Azure Storage configuration (shared stmahumsharedapps)
 const blobServiceClient = BlobServiceClient.fromConnectionString(
   process.env.AZURE_STORAGE_CONNECTION_STRING!
 );
 
-const containerName = process.env.AZURE_STORAGE_CONTAINER || 'profileperfect-ai';
+// For uploads we use the app-specific uploads container by default
+const containerName =
+  process.env.APP_BLOB_CONTAINER_UPLOADS ||
+  process.env.AZURE_STORAGE_CONTAINER ||
+  'profileperfect-uploads';
 
 /**
  * Upload a file to Azure Storage

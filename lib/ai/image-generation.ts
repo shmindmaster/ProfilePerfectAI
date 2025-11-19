@@ -1,33 +1,39 @@
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Check if AI services are properly configured
-const isAIEnabled = !!(process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY) && 
-                    !!(process.env.GOOGLE_NANO_BANANA_API_KEY);
+// Azure OpenAI availability (shared-openai-eastus2)
+const hasAzureOpenAI = !!(
+  process.env.AZURE_OPENAI_ENDPOINT &&
+  process.env.AZURE_OPENAI_API_KEY &&
+  process.env.AZURE_OPENAI_API_VERSION
+);
 
 // Configuration for ProfilePerfect AI APIs - conditional initialization
 let openai: OpenAI | null = null;
 let genAI: GoogleGenerativeAI | null = null;
 
-if (isAIEnabled) {
-  try {
+try {
+  if (hasAzureOpenAI) {
     openai = new OpenAI({
+      // apiKey is unused for Azure mode, real key is in defaultHeaders
       apiKey: process.env.OPENAI_API_KEY,
       baseURL: process.env.AZURE_OPENAI_ENDPOINT,
       defaultQuery: { 'api-version': process.env.AZURE_OPENAI_API_VERSION },
       defaultHeaders: {
-        'api-key': process.env.AZURE_OPENAI_API_KEY,
+        'api-key': process.env.AZURE_OPENAI_API_KEY!,
       },
     });
-
-    genAI = new GoogleGenerativeAI(process.env.GOOGLE_NANO_BANANA_API_KEY!);
-  } catch (error) {
-    console.warn('AI services initialization failed:', error);
   }
+
+  if (process.env.GOOGLE_NANO_BANANA_API_KEY) {
+    genAI = new GoogleGenerativeAI(process.env.GOOGLE_NANO_BANANA_API_KEY);
+  }
+} catch (error) {
+  console.warn('AI services initialization failed:', error);
 }
 
-// Export AI availability status for UI components
-export { isAIEnabled };
+// Export AI availability status for UI components (generation only)
+export const isAIEnabled = !!openai;
 
 // Types for ProfilePerfect AI image operations
 export interface GenerationRequest {
@@ -72,21 +78,24 @@ export interface RetouchedImage {
 }
 
 /**
- * Generate professional headshots using OpenAI gpt-image-1
- * Transforms 5-10 reference photos into 16-32 professional headshots
+ * Generate professional headshots using a two-step flow:
+ * 1) GPT-5.1-mini (vision) to derive a biometric identity description.
+ * 2) gpt-image-1-mini (Azure OpenAI image deployment) to render headshots.
+ *
+ * Transforms 5-10 reference photos into 16-32 professional headshots.
  */
 export async function generateHeadshots(request: GenerationRequest): Promise<GeneratedImage[]> {
   const startTime = Date.now();
   
   // Demo mode - return mock results when AI services are not available
-  if (!isAIEnabled || !openai) {
+  if (!openai) {
     console.log('Demo mode: Returning mock headshots');
     const mockImages: GeneratedImage[] = [];
     
     for (let i = 0; i < (request.count || 4); i++) {
       mockImages.push({
         id: `demo-headshot-${i + 1}`,
-        url: `https://stmahumsharedapps.blob.core.windows.net/profileperfect-ai/demo-headshot-${i + 1}.jpg`,
+        url: `https://stmahumsharedapps.blob.core.windows.net/profileperfect-generated/demo-headshot-${i + 1}.jpg`,
         metadata: {
           model: 'demo-model',
           prompt: `Demo ${request.stylePreset} headshot`,
@@ -101,17 +110,27 @@ export async function generateHeadshots(request: GenerationRequest): Promise<Gen
   
   try {
     // Validate input
-    if (request.referenceImages.length < 5 || request.referenceImages.length > 10) {
-      throw new Error('Must provide 5-10 reference images for optimal results');
+    if (!request.referenceImages || request.referenceImages.length < 1) {
+      throw new Error('At least one reference image is required');
+    }
+    if (request.referenceImages.length > 10) {
+      throw new Error('Must provide at most 10 reference images');
     }
 
-    // Create comprehensive prompt from reference images and style
-    const prompt = createGenerationPrompt(request.stylePreset, request.backgroundPreset);
+    // 1) Analyze identity using GPT-5.1-mini (vision)
+    const identityDescription = await analyzeIdentity(request.referenceImages);
+
+    // 2) Create comprehensive generation prompt from identity + style
+    const prompt = createGenerationPrompt(
+      identityDescription,
+      request.stylePreset,
+      request.backgroundPreset
+    );
     
-    // Generate images using gpt-image-1 with reference images
-    const response = await openai!.images.generate({
-      model: 'gpt-image-1',
-      prompt: prompt,
+    // 3) Generate images using gpt-image-1-mini
+    const response = await openai.images.generate({
+      model: process.env.AZURE_OPENAI_DEPLOYMENT_IMAGE || 'gpt-image-1-mini',
+      prompt,
       n: request.count || 16,
       size: request.size || '1024x1024',
       quality: request.quality || 'high',
@@ -153,11 +172,11 @@ export async function retouchImage(request: RetouchRequest): Promise<RetouchedIm
   const startTime = Date.now();
   
   // Demo mode - return mock result when AI services are not available
-  if (!isAIEnabled || !genAI) {
+  if (!genAI) {
     console.log('Demo mode: Returning mock retouched image');
     return {
       id: 'demo-retouched-image',
-      url: `https://stmahumsharedapps.blob.core.windows.net/profileperfect-ai/demo-retouched-${request.editType}.jpg`,
+      url: `https://stmahumsharedapps.blob.core.windows.net/profileperfect-generated/demo-retouched-${request.editType}.jpg`,
       metadata: {
         originalImageId: 'demo-original',
         editType: request.editType,
@@ -218,10 +237,86 @@ export async function retouchImage(request: RetouchRequest): Promise<RetouchedIm
 }
 
 /**
- * Create comprehensive generation prompt for gpt-image-1
+ * Analyze a person's identity using GPT-5.1-mini with vision input.
+ * Accepts reference image URLs (or base64 data URLs) and returns a textual
+ * biometric description focusing on permanent physical traits.
  */
-function createGenerationPrompt(stylePreset: string, backgroundPreset: string): string {
-  return `Professional headshot of a person with their natural appearance preserved, ${stylePreset} style, ${backgroundPreset} background, studio lighting, high resolution, business professional, suitable for LinkedIn profile and company website. The person should look like themselves but enhanced with professional lighting and composition.`;
+async function analyzeIdentity(referenceImages: string[]): Promise<string> {
+  if (!openai) {
+    throw new Error('Azure OpenAI client is not configured');
+  }
+
+  const chatModel = process.env.AZURE_OPENAI_DEPLOYMENT_CHAT || 'gpt-5.1-mini';
+  const maxImages = Math.min(referenceImages.length, 4);
+
+  const imageBlocks = referenceImages.slice(0, maxImages).map((url) => ({
+    // OpenAI vision input; Azure respects the same schema via baseURL
+    type: 'image_url',
+    image_url: { url },
+  })) as any;
+
+  const analysisPrompt = `You are a biometric expert and professional photographer. Analyze the person in these images carefully.
+Output a detailed physical description focusing ONLY on permanent physical traits to recreate this person's likeness.
+
+Describe in detail:
+- Exact face shape (jawline, chin structure, cheekbones).
+- Eyes (color, shape, eyelids, eyebrow thickness/shape).
+- Nose (bridge width, tip shape).
+- Mouth (lip fullness, shape).
+- Hair (color, texture, hairline, length, parting).
+- Skin tone (complexion, undertones).
+- Age range.
+- Distinctive features (freckles, moles, dimples, scars).
+
+Do NOT describe current clothing, expression, or background.`;
+
+  const messages: any = [
+    {
+      role: 'system',
+      content:
+        'You are a careful biometric analyst focused on permanent physical traits for photo likeness.',
+    },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: analysisPrompt },
+        ...imageBlocks,
+      ],
+    },
+  ];
+
+  const completion = await openai.chat.completions.create({
+    model: chatModel,
+    messages,
+  } as any);
+
+  const content = completion.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error('Identity analysis returned no content');
+  }
+
+  return typeof content === 'string' ? content.trim() : JSON.stringify(content);
+}
+
+/**
+ * Create comprehensive generation prompt for gpt-image-1-mini
+ * using the biometric identity description plus style/background.
+ */
+function createGenerationPrompt(
+  identityDescription: string,
+  stylePreset: string,
+  backgroundPreset: string
+): string {
+  return `A high-end professional headshot of a person matching this description:
+${identityDescription}
+
+SETTINGS:
+- Style: ${stylePreset}
+- Background: ${backgroundPreset}
+- Camera: 85mm portrait lens, f/1.8 aperture
+- Lighting: Cinematic studio lighting, soft fill, with subtle rim light
+- Pose: Shoulders angled slightly, face forward, confident but approachable
+- Quality: 4K, photorealistic, natural skin texture, no plastic skin.`;
 }
 
 /**

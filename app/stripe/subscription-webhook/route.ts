@@ -1,24 +1,13 @@
-import { Database } from "@/types/supabase";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { streamToString } from "@/lib/utils";
 import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { Pool } from "pg";
 
 export const dynamic = "force-dynamic";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl) {
-  throw new Error("MISSING NEXT_PUBLIC_SUPABASE_URL!");
-}
-
-if (!supabaseServiceRoleKey) {
-  throw new Error("MISSING SUPABASE_SERVICE_ROLE_KEY!");
-}
 
 const oneCreditPriceId = process.env.STRIPE_PRICE_ID_ONE_CREDIT as string;
 const threeCreditsPriceId = process.env.STRIPE_PRICE_ID_THREE_CREDITS as string;
@@ -31,6 +20,11 @@ const creditsPerPriceId: {
   [threeCreditsPriceId]: 3,
   [fiveCreditsPriceId]: 5,
 };
+
+// Shared Postgres pool for credits persistence
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.AZURE_POSTGRES_URL,
+});
 
 export async function POST(request: Request) {
   console.log("Request from: ", request.url);
@@ -87,18 +81,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createClient<Database>(
-    supabaseUrl as string,
-    supabaseServiceRoleKey as string,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-
   // Handle the event
   switch (event.type) {
     case "checkout.session.completed":
@@ -130,63 +112,42 @@ export async function POST(request: Request) {
 
       console.log("totalCreditsPurchased: " + totalCreditsPurchased);
 
-      const { data: existingCredits } = await supabase
-        .from("credits")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
-      // If user has existing credits, add to it.
-      if (existingCredits) {
-        const newCredits = existingCredits.credits + totalCreditsPurchased;
-        const { data, error } = await supabase
-          .from("credits")
-          .update({
-            credits: newCredits,
-          })
-          .eq("user_id", userId);
-
-        if (error) {
-          console.log(error);
-          return NextResponse.json(
-            {
-              message: `Error updating credits: ${JSON.stringify(error)}. data=${data}`,
-            },
-            {
-              status: 400,
-            }
-          );
-        }
-
-        return NextResponse.json(
-          {
-            message: "success",
-          },
-          { status: 200 }
-        );
+      // Persist credits in Postgres (credits table) using userId as key
+      if (!process.env.DATABASE_URL && !process.env.AZURE_POSTGRES_URL) {
+        console.warn("No DATABASE_URL or AZURE_POSTGRES_URL set; skipping credits persistence.");
       } else {
-        // Else create new credits row.
-        const { data, error } = await supabase.from("credits").insert({
-          user_id: userId,
-          credits: totalCreditsPurchased,
-        });
-
-        if (error) {
-          console.log(error);
-          return NextResponse.json(
-            {
-              message: `Error creating credits: ${error}\n ${data}`,
-            },
-            {
-              status: 400,
-            }
+        const client = await pool.connect();
+        try {
+          const existing = await client.query(
+            "SELECT credits FROM credits WHERE user_id = $1",
+            [userId]
           );
+
+          if (existing.rows.length > 0) {
+            const current = existing.rows[0].credits ?? 0;
+            const newCredits = current + totalCreditsPurchased;
+            await client.query(
+              "UPDATE credits SET credits = $1, updated_at = NOW() WHERE user_id = $2",
+              [newCredits, userId]
+            );
+          } else {
+            await client.query(
+              "INSERT INTO credits (user_id, credits) VALUES ($1, $2)",
+              [userId, totalCreditsPurchased]
+            );
+          }
+        } catch (err) {
+          console.error("Error updating credits in Postgres:", err);
+        } finally {
+          client.release();
         }
       }
 
       return NextResponse.json(
         {
           message: "success",
+          userId,
+          totalCreditsPurchased,
         },
         { status: 200 }
       );

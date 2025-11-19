@@ -3,9 +3,9 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// PostgreSQL connection pool
+// PostgreSQL connection pool (prefer DATABASE_URL, fallback to legacy AZURE_POSTGRES_URL)
 const pool = new Pool({
-  connectionString: process.env.AZURE_POSTGRES_URL,
+  connectionString: process.env.DATABASE_URL || process.env.AZURE_POSTGRES_URL,
 });
 
 export async function GET() {
