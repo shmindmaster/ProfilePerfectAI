@@ -180,11 +180,11 @@ Run the database setup script to create tables and seed sample data:
 
 ```bash
 # Set environment variables
-export POSTGRES_PASSWORD="WalidSahab112025"
-export POSTGRES_USER="pgadmin"
+export POSTGRES_PASSWORD="<your-strong-db-password>"
+export POSTGRES_USER="profileperfect_app"
 export POSTGRES_HOST="pg-shared-apps-eastus2.postgres.database.azure.com"
 export POSTGRES_DB="profileperfect_db"
-export DATABASE_URL="postgresql://pgadmin:WalidSahab112025@pg-shared-apps-eastus2.postgres.database.azure.com:5432/profileperfect_db?sslmode=require"
+export DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@pg-shared-apps-eastus2.postgres.database.azure.com:5432/profileperfect_db?sslmode=require"
 
 # Run setup
 node scripts/setup-azure-db.js
@@ -193,7 +193,7 @@ node scripts/setup-azure-db.js
 Or use PowerShell:
 
 ```powershell
-$env:DATABASE_URL = "postgresql://pgadmin:WalidSahab112025@pg-shared-apps-eastus2.postgres.database.azure.com:5432/profileperfect_db?sslmode=require"
+$env:DATABASE_URL = "postgresql://profileperfect_app:<your-strong-db-password>@pg-shared-apps-eastus2.postgres.database.azure.com:5432/profileperfect_db?sslmode=require"
 node scripts/setup-azure-db.js
 ```
 
